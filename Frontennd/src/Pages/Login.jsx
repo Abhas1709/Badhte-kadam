@@ -138,7 +138,7 @@ function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Back Button */}
         <Link
@@ -158,7 +158,7 @@ function Login() {
           {/* Header */}
           <div className="p-8 border-b border-gray-200 dark:border-gray-700">
             <div className="text-center">
-              <div className="inline-flex items-center justify-center p-3 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-500 dark:to-blue-400 mb-4">
+              <div className="inline-flex items-center justify-center p-3 rounded-full bg-linear-to-br from-blue-600 to-blue-500 dark:from-blue-500 dark:to-blue-400 mb-4">
                 {formData.role === 'student' ? (
                   <GraduationCap className="h-8 w-8 text-white" />
                 ) : (
@@ -268,7 +268,7 @@ function Login() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className={`w-full py-3 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-500 dark:to-blue-400 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-600 dark:hover:from-blue-600 dark:hover:to-blue-500 transition-all duration-300 ${
+                    className={`w-full py-3 bg-linear-to-br from-blue-600 to-blue-500 dark:from-blue-500 dark:to-blue-400 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-600 dark:hover:from-blue-600 dark:hover:to-blue-500 transition-all duration-300 ${
                       loading ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg'
                     }`}
                   >
@@ -378,7 +378,7 @@ function Login() {
                           type="button"
                           onClick={handleOTPSubmit}
                           disabled={loading || otp.some(digit => digit === '')}
-                          className={`w-full py-3 bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-500 dark:to-blue-400 text-white font-semibold rounded-lg transition-all duration-300 ${
+                          className={`w-full py-3 bg-linear-to-br from-blue-600 to-blue-500 dark:from-blue-500 dark:to-blue-400 text-white font-semibold rounded-lg transition-all duration-300 ${
                             loading || otp.some(digit => digit === '')
                               ? 'opacity-50 cursor-not-allowed'
                               : 'hover:from-blue-700 hover:to-blue-600 hover:shadow-lg'
