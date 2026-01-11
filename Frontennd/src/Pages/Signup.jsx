@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react'
+import api from '../utils/api'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  Mail, 
-  Lock, 
-  Eye, 
-  EyeOff, 
-  User, 
-  Phone, 
-  GraduationCap, 
-  Briefcase, 
-  Building, 
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  User,
+  Phone,
+  GraduationCap,
+  Briefcase,
+  Building,
   MapPin,
   Calendar,
   DollarSign,
@@ -25,10 +26,10 @@ import {
 function Signup() {
   const location = useLocation()
   const navigate = useNavigate()
-  
+
   // Get role from navigation state, default to student
   const role = location.state?.role || 'student'
-  
+
   const [formData, setFormData] = useState({
     // Common fields
     email: '',
@@ -37,7 +38,7 @@ function Signup() {
     fullName: '',
     phone: '',
     role: role,
-    
+
     // Student specific fields
     educationLevel: '',
     institution: '',
@@ -48,7 +49,7 @@ function Signup() {
     currentCTC: '',
     expectedCTC: '',
     resume: null,
-    
+
     // Recruiter specific fields
     companyName: '',
     companyWebsite: '',
@@ -60,7 +61,7 @@ function Signup() {
     hrEmail: '',
     companyDescription: ''
   })
-  
+
   const [currentStep, setCurrentStep] = useState(1)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -78,7 +79,7 @@ function Signup() {
 
   const handleChange = (e) => {
     const { name, value, type, files } = e.target
-    
+
     if (type === 'file') {
       setFormData({
         ...formData,
@@ -133,25 +134,85 @@ function Signup() {
     }
   }
 
+  /* -------------------- API HANDLERS -------------------- */
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
+    e.preventDefault();
+    setLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false)
-      setSignupSuccess(true)
-      
-      // Redirect after success
+    try {
+      // Step 1: Register User (Email/Pass/Role)
+      // Backend expects: email, password, roles (array)
+      const authPayload = {
+        email: formData.email,
+        password: formData.password,
+        roles: [formData.role]
+      };
+
+      console.log("Sending Register Payload:", authPayload);
+
+      await api.post('/auth/register', authPayload);
+
+      setLoading(false);
+      // Advance to Verification Step
+      setCurrentStep(4);
+
+    } catch (error) {
+      console.error("Signup error:", error);
+      alert(error.response?.data?.message || "Registration failed");
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyAndSaveProfile = async (otpCode) => {
+    if (!otpCode || otpCode.length < 6) return; // Basic check
+    setLoading(true);
+    try {
+      // 1. Verify OTP & Get Token
+      const verifyRes = await api.post('/auth/verify-otp', {
+        email: formData.email,
+        code: otpCode
+      });
+
+      const token = verifyRes.data.token;
+      if (token) {
+        localStorage.setItem('token', token);
+        api.defaults.headers.common['Authorization'] = `Bearer ${token}`; // Set manually for immediate use
+      }
+
+      // 2. Save Profile Data
+      if (formData.role === 'student') {
+        const studentPayload = {
+          fullName: formData.fullName,
+          // Combine education details clearly
+          education: `${formData.educationLevel || ''} in ${formData.course || ''} from ${formData.institution || ''} (${formData.graduationYear || ''})`.trim(),
+          skills: formData.skills,
+          bio: `${formData.experience || 'Fresher'} experience. Current CTC: ${formData.currentCTC || 'N/A'}. Expected: ${formData.expectedCTC || 'N/A'}`,
+          resumeUrl: ""
+        };
+        await api.put('/student/me', studentPayload);
+      } else {
+        const recruiterPayload = {
+          companyName: formData.companyName,
+          companyWebsite: formData.companyWebsite,
+          companyLocation: formData.companyLocation,
+          // Combine extra fields into 'about'
+          about: `Designation: ${formData.designation}. Size: ${formData.companySize}. Industry: ${formData.industry}. Hiring For: ${formData.hiringFor.join(", ")}`
+        };
+        await api.put('/recruiter/me', recruiterPayload);
+      }
+
+      setLoading(false);
+      setSignupSuccess(true);
+
       setTimeout(() => {
-        navigate('/login', { 
-          state: { 
-            email: formData.email,
-            role: formData.role 
-          } 
-        })
-      }, 2000)
-    }, 1500)
+        navigate(formData.role === 'student' ? '/student/dashboard' : '/recruiter/dashboard');
+      }, 1500);
+
+    } catch (error) {
+      console.error("Verification/Profile error:", error);
+      alert(error.response?.data?.message || "Verification failed");
+      setLoading(false);
+    }
   }
 
   const nextStep = () => {
@@ -174,10 +235,10 @@ function Signup() {
   }
 
   const isStepValid = () => {
-    switch(currentStep) {
+    switch (currentStep) {
       case 1:
-        return formData.email && formData.password && formData.confirmPassword && 
-               formData.password === formData.confirmPassword
+        return formData.email && formData.password && formData.confirmPassword &&
+          formData.password === formData.confirmPassword
       case 2:
         return formData.fullName && formData.phone
       case 3:
@@ -249,11 +310,11 @@ function Signup() {
                   <Briefcase className="h-8 w-8 text-white" />
                 )}
               </div>
-              
+
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                 Create Your Account
               </h1>
-              
+
               <div className="flex items-center justify-center space-x-3 mb-6">
                 <p className="text-gray-600 dark:text-gray-400">
                   Sign up as {formData.role === 'student' ? 'Student' : 'Recruiter'}
@@ -270,13 +331,12 @@ function Signup() {
               <div className="flex items-center justify-center mb-6">
                 {[1, 2, 3].map((step) => (
                   <div key={step} className="flex items-center">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      step === currentStep
-                        ? 'bg-blue-600 text-white'
-                        : step < currentStep
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${step === currentStep
+                      ? 'bg-blue-600 text-white'
+                      : step < currentStep
                         ? 'bg-green-500 text-white'
                         : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
-                    }`}>
+                      }`}>
                       {step < currentStep ? (
                         <CheckCircle className="h-5 w-5" />
                       ) : (
@@ -284,9 +344,8 @@ function Signup() {
                       )}
                     </div>
                     {step < 3 && (
-                      <div className={`w-16 h-1 mx-2 ${
-                        step < currentStep ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
-                      }`} />
+                      <div className={`w-16 h-1 mx-2 ${step < currentStep ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
+                        }`} />
                     )}
                   </div>
                 ))}
@@ -338,13 +397,41 @@ function Signup() {
                   exit={{ opacity: 0, x: -20 }}
                   className="space-y-6"
                 >
-                  {/* Step 1: Account Details */}
+                  {/* Step 4: Verification */}
+                  {currentStep === 4 && (
+                    <div className="space-y-6">
+                      <div className="text-center mb-6">
+                        <div className="inline-flex items-center justify-center p-3 rounded-full bg-blue-100 mb-4">
+                          <CheckCircle className="h-8 w-8 text-blue-600" />
+                        </div>
+                        <h2 className="text-xl font-bold">Verify Your Email</h2>
+                        <p className="text-gray-500">Enter the OTP sent to {formData.email}</p>
+                      </div>
+
+                      <div className="flex justify-center space-x-3">
+                        <input
+                          type="text"
+                          placeholder="Enter OTP"
+                          className="w-full text-center text-2xl tracking-widest px-4 py-3 border rounded-lg"
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') handleVerifyAndSaveProfile(e.target.value);
+                          }}
+                          onBlur={(e) => {
+                            if (e.target.value.length >= 4) handleVerifyAndSaveProfile(e.target.value);
+                          }}
+                        />
+                      </div>
+                      <p className="text-xs text-center text-gray-500">Press Enter after typing code</p>
+                    </div>
+                  )}
+
+                  {/* Account Details Step 1 */}
                   {currentStep === 1 && (
                     <div className="space-y-6">
                       <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                         Step 1: Account Details
                       </h2>
-                      
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Email Address
@@ -438,7 +525,7 @@ function Signup() {
                       <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                         Step 2: Personal Information
                       </h2>
-                      
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Full Name
@@ -827,7 +914,7 @@ function Signup() {
                                     className="text-blue-600 hover:text-blue-800"
                                   >
                                     ×
-                                    </button>
+                                  </button>
                                 </div>
                               ))}
                             </div>
@@ -888,9 +975,8 @@ function Signup() {
                           type="button"
                           onClick={nextStep}
                           disabled={!isStepValid()}
-                          className={`px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold rounded-lg transition-all duration-300 flex items-center gap-2 ${
-                            !isStepValid() ? 'opacity-50 cursor-not-allowed' : 'hover:from-blue-700 hover:to-blue-600 hover:shadow-lg'
-                          }`}
+                          className={`px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold rounded-lg transition-all duration-300 flex items-center gap-2 ${!isStepValid() ? 'opacity-50 cursor-not-allowed' : 'hover:from-blue-700 hover:to-blue-600 hover:shadow-lg'
+                            }`}
                         >
                           Continue
                           <ChevronRight className="h-4 w-4" />
@@ -899,9 +985,8 @@ function Signup() {
                         <button
                           type="submit"
                           disabled={loading || !isStepValid()}
-                          className={`px-8 py-3 bg-gradient-to-r from-green-600 to-green-500 text-white font-semibold rounded-lg transition-all duration-300 ${
-                            loading || !isStepValid() ? 'opacity-50 cursor-not-allowed' : 'hover:from-green-700 hover:to-green-600 hover:shadow-lg'
-                          }`}
+                          className={`px-8 py-3 bg-gradient-to-r from-green-600 to-green-500 text-white font-semibold rounded-lg transition-all duration-300 ${loading || !isStepValid() ? 'opacity-50 cursor-not-allowed' : 'hover:from-green-700 hover:to-green-600 hover:shadow-lg'
+                            }`}
                         >
                           {loading ? 'Creating Account...' : 'Create Account'}
                         </button>
@@ -917,8 +1002,8 @@ function Signup() {
               <div className="text-center mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Already have an account?{' '}
-                  <Link 
-                    to="/login" 
+                  <Link
+                    to="/login"
                     state={{ role: formData.role }}
                     className="text-blue-600 dark:text-blue-400 hover:text-blue-500 font-medium"
                   >

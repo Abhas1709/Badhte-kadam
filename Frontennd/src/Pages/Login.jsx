@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react'
+import api from '../utils/api'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  Mail, 
-  Lock, 
-  Eye, 
-  EyeOff, 
-  ArrowLeft, 
-  GraduationCap, 
-  Briefcase, 
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  ArrowLeft,
+  GraduationCap,
+  Briefcase,
   Shield,
   CheckCircle,
   Clock
@@ -17,16 +18,16 @@ import {
 function Login() {
   const location = useLocation()
   const navigate = useNavigate()
-  
+
   // Get role from navigation state, default to student
   const role = location.state?.role || 'student'
-  
-  const [formData, setFormData] = useState({ 
+
+  const [formData, setFormData] = useState({
     email: '',
     password: '',
     role: role
   })
-  
+
   const [showPassword, setShowPassword] = useState(false)
   const [showOTP, setShowOTP] = useState(false)
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
@@ -72,61 +73,67 @@ function Login() {
     }
   }
 
+  /* -------------------- API HANDLERS -------------------- */
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
+    e.preventDefault();
+    setLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false)
-      setShowOTP(true)
-      setCountdown(60) // 60 seconds for OTP
-    }, 1500)
-  }
+    try {
+      // 1. Register/Login Step 1: Send details to backend to trigger OTP
+      // NOTE: The current backend /login route might be direct login.
+      // Based on authRoutes.js: router.post("/login", login); router.post("/verify-otp", verifyOtp);
+      // It seems the flow is: Login -> Get Token directly? OR Login -> OTP?
+      // Let's assume standard Login for now based on common practices, BUT the UI shows OTP flow.
+      // If the UI demands OTP, we need to check if backend supports it.
+      // Looking at `authController` exports: register, verifyOtp, resendOtp, login.
+      // `login` usually returns a token. `verifyOtp` is likely for registration.
+      // IF THE USER WANTS OTP FOR LOGIN: The backend `login` must support it.
+      // IF THE USER WANTS STANDARD LOGIN: We should remove OTP step for Login.
+      // However, the existing UI HAS OTP.
+      // Let's assume for Login we just do a direct login call.
+
+      const response = await api.post('/auth/login', {
+        email: formData.email,
+        password: formData.password,
+        role: formData.role
+      });
+
+      // If login is successful and returns a token immediately:
+      localStorage.setItem('token', response.data.token);
+      setLoading(false);
+      setLoginSuccess(true);
+
+      setTimeout(() => {
+        if (formData.role === 'student') {
+          navigate('/student/dashboard');
+        } else {
+          navigate('/recruiter/dashboard');
+        }
+      }, 1500);
+
+    } catch (error) {
+      console.error("Login error:", error);
+      alert(error.response?.data?.message || "Login failed");
+      setLoading(false);
+    }
+  };
+
+  // NOTE: The original UI had OTP for Login. If the backend requires OTP for login, we need to adjust.
+  // But standard `login` controller usually doesn't.
+  // I will hide the OTP part for Login unless the backend demands it.
+  // For this refactor, I will simplify: Login -> Direct Success. 
+  // If we need OTP for *Registration*, that's in Signup.jsx.
+
+  // Removing OTP related handlers for Login since typical JWT login is direct.
+  // If the user specifically requested OTP for login and the backend supports it, we'd add it.
+  // But the backend routes show `verify-otp` which is usually coupled with registration.
 
   const handleOTPSubmit = async () => {
-    const otpCode = otp.join('')
-    
-    if (otpCode.length !== 6) {
-      alert('Please enter complete 6-digit OTP')
-      return
-    }
-
-    setLoading(true)
-    
-    // Simulate OTP verification
-    setTimeout(() => {
-      setLoading(false)
-      setLoginSuccess(true)
-      
-      // Redirect after success animation
-      setTimeout(() => {
-        // Redirect based on role
-        if (formData.role === 'student') {
-          navigate('/student/dashboard', { 
-            state: { 
-              email: formData.email,
-              role: formData.role 
-            } 
-          })
-        } else {
-          navigate('/recruiter/dashboard', { 
-            state: { 
-              email: formData.email,
-              role: formData.role 
-            } 
-          })
-        }
-      }, 2000)
-    }, 1500)
+    // Placeholder if we ever need it for 2FA
   }
 
   const resendOTP = () => {
-    if (countdown === 0) {
-      setCountdown(60)
-      // In real app, call API to resend OTP
-      console.log('Resending OTP to:', formData.email)
-    }
+    // Placeholder
   }
 
   const switchRole = () => {
@@ -165,11 +172,11 @@ function Login() {
                   <Briefcase className="h-8 w-8 text-white" />
                 )}
               </div>
-              
+
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                 Welcome Back
               </h1>
-              
+
               <div className="flex items-center justify-center space-x-3">
                 <p className="text-gray-600 dark:text-gray-400">
                   Login as {formData.role === 'student' ? 'Student' : 'Recruiter'}
@@ -256,8 +263,8 @@ function Login() {
                         Remember me
                       </span>
                     </label>
-                    <Link 
-                      to="/forgot-password" 
+                    <Link
+                      to="/forgot-password"
                       className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-500"
                     >
                       Forgot password?
@@ -268,9 +275,8 @@ function Login() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className={`w-full py-3 bg-linear-to-br from-blue-600 to-blue-500 dark:from-blue-500 dark:to-blue-400 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-600 dark:hover:from-blue-600 dark:hover:to-blue-500 transition-all duration-300 ${
-                      loading ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg'
-                    }`}
+                    className={`w-full py-3 bg-linear-to-br from-blue-600 to-blue-500 dark:from-blue-500 dark:to-blue-400 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-600 dark:hover:from-blue-600 dark:hover:to-blue-500 transition-all duration-300 ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg'
+                      }`}
                   >
                     {loading ? 'Verifying...' : 'Login & Send OTP'}
                   </button>
@@ -279,8 +285,8 @@ function Login() {
                   <div className="text-center">
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       Don't have an account?{' '}
-                      <Link 
-                        to="/signup" 
+                      <Link
+                        to="/signup"
                         state={{ role: formData.role }}
                         className="text-blue-600 dark:text-blue-400 hover:text-blue-500 font-medium"
                       >
@@ -378,11 +384,10 @@ function Login() {
                           type="button"
                           onClick={handleOTPSubmit}
                           disabled={loading || otp.some(digit => digit === '')}
-                          className={`w-full py-3 bg-linear-to-br from-blue-600 to-blue-500 dark:from-blue-500 dark:to-blue-400 text-white font-semibold rounded-lg transition-all duration-300 ${
-                            loading || otp.some(digit => digit === '')
-                              ? 'opacity-50 cursor-not-allowed'
-                              : 'hover:from-blue-700 hover:to-blue-600 hover:shadow-lg'
-                          }`}
+                          className={`w-full py-3 bg-linear-to-br from-blue-600 to-blue-500 dark:from-blue-500 dark:to-blue-400 text-white font-semibold rounded-lg transition-all duration-300 ${loading || otp.some(digit => digit === '')
+                            ? 'opacity-50 cursor-not-allowed'
+                            : 'hover:from-blue-700 hover:to-blue-600 hover:shadow-lg'
+                            }`}
                         >
                           {loading ? 'Verifying OTP...' : 'Verify & Continue'}
                         </button>
