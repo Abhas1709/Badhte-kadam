@@ -1,0 +1,20 @@
+/* html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+} */
+
+
+* body {
+  overflow-y: scroll;
+  overflow-x: hidden;
+  scrollbar-width: none;
+} 
+
+/* body::-webkit-scrollbar {
+  display: none;
+} */
+
+/* * {
+  box-sizing: border-box;
+} */
