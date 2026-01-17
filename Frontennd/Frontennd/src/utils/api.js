@@ -3,7 +3,7 @@ import axios from 'axios';
 const envApiUrl = import.meta.env.VITE_API_URL;
 const API_URL = envApiUrl
   ? (envApiUrl.endsWith('/api') ? envApiUrl : `${envApiUrl.replace(/\/$/, '')}/api`)
-  : 'http://localhost:5000/api';
+  : 'https://badhte-kadam.onrender.com/api';
 
 const api = axios.create({
   baseURL: API_URL,
